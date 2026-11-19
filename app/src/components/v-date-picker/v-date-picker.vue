@@ -66,6 +66,24 @@ const {
 	onUpdate: (value) => emit('update:modelValue', value),
 });
 
+const weekStartsOn = computed<0 | 1 | 2 | 3 | 4 | 5 | 6>(() => {
+	try {
+		const locale = new Intl.Locale(userStore.language ?? 'en-US') as Intl.Locale & {
+			weekInfo?: { firstDay: number };
+			getWeekInfo?: () => { firstDay: number };
+		};
+
+		const firstDay = locale.getWeekInfo?.().firstDay ?? locale.weekInfo?.firstDay;
+
+		// Intl uses 1 (Monday) to 7 (Sunday), the calendar uses 0 (Sunday) to 6 (Saturday)
+		if (typeof firstDay === 'number') return (firstDay % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+	} catch {
+		// Fall through to the default below
+	}
+
+	return 0;
+});
+
 const monthFormatter = computed(() => {
 	// Use 'long' for “January”, 'short' for “Jan”, 'narrow' for “J”
 	// timeZone: 'UTC' ensures the month name matches the UTC date created by `toDate('UTC')` below,
@@ -157,6 +175,8 @@ function setToNow() {
 			class="calendar"
 			fixed-weeks
 			weekday-format="short"
+			:locale="userStore.language"
+			:week-starts-on="weekStartsOn"
 			:dir="isRTL ? 'rtl' : 'ltr'"
 			@update:model-value="handleDateChange"
 		>
